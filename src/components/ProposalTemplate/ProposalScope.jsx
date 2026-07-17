@@ -52,19 +52,14 @@ export function ScopePart2({ quantities, financials, options, totalCostStr, cont
   if (mode === 'detailed') {
     return (
       <>
-        <ul style={{ marginTop: '0', paddingLeft: '20px', listStyleType: 'disc', lineHeight: '1.8' }}>
-          <li><strong>Shingles:</strong> Install {options?.shingle_tier || 'Landmark Pro'} ({quantities.shingle_squares || 0} squares).</li>
+        <ul style={{ marginTop: '0', paddingLeft: '20px', listStyleType: 'disc', lineHeight: '1.4' }}>
+          <li><strong>Shingles:</strong> Install upgraded {options?.shingle_tier || 'Landmark Pro'} architectural shingles ({quantities.shingle_squares || 0} squares).</li>
           <li><strong>Penetrations:</strong> Flash {options?.number_of_pipe_boots || 0} pipe boots.</li>
           <li><strong>Drainage:</strong> {options?.new_gutters ? 'Install new 5" seamless aluminum raingutters.' : 'Existing gutters to remain.'}</li>
           <li><strong>Accessories:</strong> Install 12" Filtered ridge vent ({quantities.ridge_vent_pcs || 0} pcs).</li>
           <li><strong>Chimney:</strong> {options?.relead_chimney ? 'Re-lead and flash chimney.' : 'Existing chimney flashing to remain.'}</li>
           <li><strong>Close-out & Warranty:</strong> Full clean-up. {options?.warranty_type} warranty included.</li>
         </ul>
-
-        {/* FINAL PRICE STATEMENT */}
-        <div style={{ textAlign: 'center', marginTop: '40px', fontWeight: 'bold', fontSize: '15px' }}>
-          Luukko Corporation can furnish materials and labor for an investment of ${totalCostStr}.
-        </div>
       </>
     );
   }

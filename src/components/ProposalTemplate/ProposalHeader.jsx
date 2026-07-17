@@ -1,14 +1,14 @@
 import React from 'react';
 
-export default function ProposalHeader({ customerName, date, customerAddress }) {
+export default function ProposalHeader({ customerName, date, customerAddress, mode = 'expressive' }) {
   // Try to parse the first name from customerName for the "Dear {firstName}" greeting
   const firstName = customerName ? customerName.split(' ')[0] : 'Customer';
   const cAddress = customerAddress || 'Project Address';
 
   return (
-    <div style={{ marginBottom: '20px' }}>
+    <div style={{ marginBottom: mode === 'summarised' ? '10px' : '20px' }}>
       {/* Header Container */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: mode === 'summarised' ? '15px' : '30px' }}>
         {/* Left Column: Certifications */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <img 
@@ -45,15 +45,26 @@ export default function ProposalHeader({ customerName, date, customerAddress }) 
         <p style={{ margin: '0' }}>{customerName || 'Client Name'} Residence</p>
         <p style={{ margin: '0' }}>Attn: {customerName || 'Client Name'}</p>
         <p style={{ margin: '0', whiteSpace: 'pre-line' }}>{cAddress}</p>
-        <p style={{ margin: '0' }}>RE: Roof Replacement</p>
+        <p style={{ margin: '0' }}>RE: Roof Replacement{mode === 'summarised' && ' — Preliminary Estimate'}</p>
       </div>
 
       {/* Opening Letter */}
-      <div style={{ marginTop: '30px', fontSize: '14px', lineHeight: '1.5' }}>
-        <p>Dear {firstName},</p>
-        <p>
-          Thank you for considering Luukko Roofing to replace your home’s roof. Upon review of the existing building at {cAddress}, we have prepared the following proposal for your review utilizing materials from CertainTeed. Please be sure the scope aligns with your expectations.
-        </p>
+      <div style={{ marginTop: mode === 'summarised' ? '15px' : '30px', fontSize: '14px', lineHeight: '1.4' }}>
+        <p style={{ marginTop: 0 }}>Dear {firstName},</p>
+        {mode === 'summarised' ? (
+          <>
+            <p>
+              This is a fast, ballpark estimate based on aerial measurements of your property, meant to give you a starting point, not a final price. If this looks like a good fit, we'll schedule a walkthrough, confirm details, and put together a firm contract with exact pricing.
+            </p>
+            <p>
+              Thank you for considering Luukko Roofing to replace your home’s roof. We've reviewed the property at {cAddress} and prepared this estimate using materials from CertainTeed.
+            </p>
+          </>
+        ) : (
+          <p>
+            Thank you for considering Luukko Roofing to replace your home’s roof. Upon review of the existing building at {cAddress}, we have prepared the following proposal for your review utilizing materials from CertainTeed. Please be sure the scope aligns with your expectations.
+          </p>
+        )}
       </div>
     </div>
   );

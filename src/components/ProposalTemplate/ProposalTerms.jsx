@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function TermsPart1({ financials, mode = 'expressive' }) {
+export function TermsPart1({ financials, mode = 'expressive', hidePaymentTerms = false, hideVisaText = false }) {
   const formatMoney = (val) => '$' + (val || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
@@ -8,7 +8,7 @@ export function TermsPart1({ financials, mode = 'expressive' }) {
       {/* QUALIFICATIONS */}
       <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>Qualifications:</p>
       {mode === 'detailed' ? (
-        <ul style={{ marginTop: '0', paddingLeft: '20px', listStyleType: 'disc', lineHeight: '1.6' }}>
+        <ul style={{ marginTop: '0', paddingLeft: '20px', listStyleType: 'disc', lineHeight: '1.4' }}>
           <li>Landscaping protection provided, but minor damage is possible. Scaffolding is extra.</li>
           <li>Includes 1 mobilization. No project phasing.</li>
           <li>Scope covers roof edge to roof edge only.</li>
@@ -27,7 +27,7 @@ export function TermsPart1({ financials, mode = 'expressive' }) {
       {/* EXCLUSIONS */}
       <p style={{ fontWeight: 'bold', marginBottom: '5px', marginTop: '15px' }}>Exclusions:</p>
       {mode === 'detailed' ? (
-        <ul style={{ marginTop: '0', paddingLeft: '20px', listStyleType: 'disc', lineHeight: '1.6' }}>
+        <ul style={{ marginTop: '0', paddingLeft: '20px', listStyleType: 'disc', lineHeight: '1.4' }}>
           <li>Hand sealing of shingles and permanent fall protection anchors.</li>
           <li>Solar penetrations, awnings, and mechanical penetrations by others.</li>
           <li>Insulation and historical preservation requirements.</li>
@@ -58,28 +58,34 @@ export function TermsPart1({ financials, mode = 'expressive' }) {
         </ul>
       )}
 
-      <p style={{ textAlign: 'center', fontWeight: 'bold', marginTop: '30px', marginBottom: '30px' }}>
-        Payments made by Visa, Master Card, Discover or American Express are subject to convenience fee of 4% of total amount charged.
-      </p>
+      {!hideVisaText && (
+        <p style={{ textAlign: 'center', fontWeight: 'bold', marginTop: '15px', marginBottom: '15px', fontSize: '13px' }}>
+          Payments made by Visa, Master Card, Discover or American Express are subject to convenience fee of 4% of total amount charged.
+        </p>
+      )}
 
       {/* PAYMENT TERMS */}
-      <p style={{ fontWeight: 'bold', textDecoration: 'underline', marginBottom: '15px' }}>Payment Terms:</p>
-      <table style={{ width: '70%', marginLeft: '30px', fontWeight: 'bold' }}>
-        <tbody>
-          <tr>
-            <td style={{ paddingBottom: '10px' }}>Deposit Due Upon Signing:</td>
-            <td style={{ paddingBottom: '10px' }}>{formatMoney(financials?.deposit_due)}**</td>
-          </tr>
-          <tr>
-            <td style={{ paddingBottom: '10px' }}>Remainder Due Upon Completion of Job:</td>
-            <td style={{ paddingBottom: '10px' }}>{formatMoney(financials?.completion_due)}**</td>
-          </tr>
-          <tr>
-            <td style={{ paddingTop: '10px' }}>Total Payments Due:</td>
-            <td style={{ paddingTop: '10px' }}>{formatMoney(financials?.final_contract_price)}**</td>
-          </tr>
-        </tbody>
-      </table>
+      {!hidePaymentTerms && (
+        <>
+          <p style={{ fontWeight: 'bold', textDecoration: 'underline', marginBottom: '15px' }}>Payment Terms:</p>
+          <table style={{ width: '70%', marginLeft: '30px', fontWeight: 'bold' }}>
+            <tbody>
+              <tr>
+                <td style={{ paddingBottom: '10px' }}>Deposit Due Upon Signing:</td>
+                <td style={{ paddingBottom: '10px' }}>{formatMoney(financials?.deposit_due)}**</td>
+              </tr>
+              <tr>
+                <td style={{ paddingBottom: '10px' }}>Remainder Due Upon Completion of Job:</td>
+                <td style={{ paddingBottom: '10px' }}>{formatMoney(financials?.completion_due)}**</td>
+              </tr>
+              <tr>
+                <td style={{ paddingTop: '10px' }}>Total Payments Due:</td>
+                <td style={{ paddingTop: '10px' }}>{formatMoney(financials?.final_contract_price)}**</td>
+              </tr>
+            </tbody>
+          </table>
+        </>
+      )}
     </>
   );
 }

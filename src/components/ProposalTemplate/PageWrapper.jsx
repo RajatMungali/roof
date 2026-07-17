@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function PageWrapper({ children, customFooter }) {
+export default function PageWrapper({ children, customFooter, hideFooter = false }) {
   return (
     <div className="print-page" style={{
       width: '8.5in',
@@ -26,10 +26,12 @@ export default function PageWrapper({ children, customFooter }) {
       </div>
       
       {/* Absolute positioned footer at the bottom of the 11in page */}
-      <div style={{ position: 'absolute', bottom: '0.4in', left: '0.5in', right: '0.5in', display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#1a4387', fontStyle: 'italic', fontWeight: 'bold' }}>
-        <span>www.FixTheRoof.com</span>
-        <span>Initial Here______</span>
-      </div>
+      {!hideFooter && (
+        <div style={{ position: 'absolute', bottom: '0.4in', left: '0.5in', right: '0.5in', display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#1a4387', fontStyle: 'italic', fontWeight: 'bold' }}>
+          <span>www.FixTheRoof.com</span>
+          <span>Initial Here______</span>
+        </div>
+      )}
 
       {customFooter && (
         <div style={{ position: 'absolute', bottom: '0.1in', left: '0.5in', right: '0.5in', textAlign: 'center', fontSize: '11px' }}>
