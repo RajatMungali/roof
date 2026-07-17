@@ -103,7 +103,10 @@ export default function ControlPanel({ onCalculationComplete }) {
         body: JSON.stringify(payload)
       });
       
-      if (!response.ok) throw new Error("Calculation failed");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Calculation failed: ${response.status} - ${errorText}`);
+      }
       const result = await response.json();
       
       if (result.status === "success") {
