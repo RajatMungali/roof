@@ -10,7 +10,7 @@ import { LegalPart1, LegalPart2 } from './LegalTerms';
 const DocumentCanvas = forwardRef(({ data }, ref) => {
   const componentRef = useRef(null);
   const [isCommitting, setIsCommitting] = useState(false);
-  const [layoutOption, setLayoutOption] = useState('Expressive');
+  const [layoutOption, setLayoutOption] = useState('Best');
   const [alertConfig, setAlertConfig] = useState(null);
 
   const generatePDF = async (action) => {
@@ -134,9 +134,9 @@ const DocumentCanvas = forwardRef(({ data }, ref) => {
             onChange={(e) => setLayoutOption(e.target.value)}
             style={{ padding: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
           >
-            <option value="Summarised">Summarised</option>
-            <option value="Detailed">Detailed</option>
-            <option value="Expressive">Expressive</option>
+            <option value="Good">Good</option>
+            <option value="Better">Better</option>
+            <option value="Best">Best</option>
           </select>
         </div>
         <div className="toolbar-actions">
@@ -150,7 +150,7 @@ const DocumentCanvas = forwardRef(({ data }, ref) => {
         {/* THE PROPOSAL DOCUMENT */}
         <div ref={componentRef}>
           
-          {layoutOption === 'Expressive' && (
+          {layoutOption === 'Best' && (
             <>
               {/* PAGE 1 */}
               <PageWrapper>
@@ -185,7 +185,7 @@ const DocumentCanvas = forwardRef(({ data }, ref) => {
             </>
           )}
 
-          {layoutOption === 'Detailed' && (
+          {layoutOption === 'Better' && (
             <>
               {/* PAGE 1 */}
               <PageWrapper hideFooter={true}>
@@ -352,7 +352,7 @@ const DocumentCanvas = forwardRef(({ data }, ref) => {
               </PageWrapper>
             </>
           )}
-          {layoutOption === 'Summarised' && (
+          {layoutOption === 'Good' && (
             <>
               {/* PAGE 1 */}
               <PageWrapper hideFooter={true}>
