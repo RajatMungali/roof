@@ -1,46 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default function ControlPanel({ onCalculationComplete }) {
-  const [formData, setFormData] = useState({
-    customer_name: 'Tim Lamoureux',
-    customer_address: '39 Town Farm Road, Brookfield MA',
-    roof_area_sq: 23.0,
-    pitch: 5,
-    eave_lf: 120.5,
-    rake_lf: 80.0,
-    ridge_lf: 40.0,
-    valley_lf: 20.0,
-    sidewall_lf: 15.0,
-    headwall_lf: 10.0,
-    hip_lf: 0,
-    waste_factor: 5,
-    manufacturer: 'CertainTeed',
-    shingle_tier: 'Landmark Pro',
-    tear_off_layers: 2,
-    pipe_boots: 1,
-    chimney_relead: true,
-    num_chimneys: 1,
-    step_flashing_override: 0,
-    special_note_gutter_enabled: true,
-    special_note_gutter_amount: 3612.00,
-    ridge_vent: true,
-    skylights: 0,
-    satellite: false,
-    roof_deck_type: 'plywood',
-    apply_financing: false,
-    markup_percentage: 40.0,
-    warranty_type: 'Standard',
-    warranty_cost: 0,
-    deck_replacement_sf: 0,
-    custom_labor_override: 0,
-    contingency_plywood_rate: 5.85,
-    contingency_ledger_rate: 8.85,
-    contingency_pipe_boot_rate: 85.00
-  });
+const DEFAULT_FORM_DATA = {
+  customer_name: '',
+  customer_address: '',
+  roof_area_sq: 0,
+  pitch: 0,
+  eave_lf: 0,
+  rake_lf: 0,
+  ridge_lf: 0,
+  valley_lf: 0,
+  sidewall_lf: 0,
+  headwall_lf: 0,
+  hip_lf: 0,
+  waste_factor: 10,
+  manufacturer: 'CertainTeed',
+  shingle_tier: 'Landmark',
+  tear_off_layers: 1,
+  pipe_boots: 1,
+  chimney_relead: false,
+  num_chimneys: 0,
+  step_flashing_override: 0,
+  special_note_gutter_enabled: false,
+  special_note_gutter_amount: 0,
+  ridge_vent: true,
+  skylights: 0,
+  satellite: false,
+  roof_deck_type: 'plywood',
+  apply_financing: false,
+  markup_percentage: 35.0,
+  warranty_type: 'Standard',
+  warranty_cost: 0,
+  deck_replacement_sf: 0,
+  custom_labor_override: 0,
+  contingency_plywood_rate: 5.85,
+  contingency_ledger_rate: 8.85,
+  contingency_pipe_boot_rate: 85.00
+};
+
+export default function ControlPanel({ onCalculationComplete, pdfExtractedData, loadedJobData }) {
+  const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
 
   const [expandedSection, setExpandedSection] = useState('ADMINISTRATIVE');
   const [isCalculating, setIsCalculating] = useState(false);
   const [liveTotal, setLiveTotal] = useState(0);
+
+  useEffect(() => {
+    if (loadedJobData) {
+      setFormData(loadedJobData);
+    } else if (pdfExtractedData) {
+      setFormData(prev => ({
+        ...DEFAULT_FORM_DATA, // Start fresh for new PDF
+        roof_area_sq: pdfExtractedData.roof_area_sq || 0,
+        pitch: pdfExtractedData.pitch || 0,
+        eave_lf: pdfExtractedData.eave_lf || 0,
+        rake_lf: pdfExtractedData.rake_lf || 0,
+        ridge_lf: pdfExtractedData.ridge_lf || 0,
+        hip_lf: pdfExtractedData.hip_lf || 0,
+        valley_lf: pdfExtractedData.valley_lf || 0,
+        sidewall_lf: pdfExtractedData.step_flashing_lf || 0,
+        headwall_lf: pdfExtractedData.headwall_lf || 0,
+      }));
+    } else {
+      setFormData(DEFAULT_FORM_DATA);
+    }
+  }, [pdfExtractedData, loadedJobData]);
 
   const toggleSection = (section) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -157,11 +180,11 @@ export default function ControlPanel({ onCalculationComplete }) {
             <div className="form-section-body">
               <div className="form-group">
                 <label>Customer Name</label>
-                <input type="text" className="form-control" name="customer_name" value={formData.customer_name} onChange={handleInputChange} />
+                <input type="text" className="form-control" name="customer_name" value={formData.customer_name} onChange={handleInputChange} style={{ backgroundColor: '#ffe6e6' }} />
               </div>
               <div className="form-group">
                 <label>Property Address</label>
-                <input type="text" className="form-control" name="customer_address" value={formData.customer_address} onChange={handleInputChange} />
+                <input type="text" className="form-control" name="customer_address" value={formData.customer_address} onChange={handleInputChange} style={{ backgroundColor: '#ffe6e6' }} />
               </div>
             </div>
           )}
@@ -241,7 +264,7 @@ export default function ControlPanel({ onCalculationComplete }) {
             <div className="form-section-body">
               <div className="form-group">
                 <label>Manufacturer</label>
-                <select className="form-control" name="manufacturer" value={formData.manufacturer} onChange={handleInputChange}>
+                <select className="form-control" name="manufacturer" value={formData.manufacturer} onChange={handleInputChange} style={{ backgroundColor: '#ffe6e6' }}>
                   <option value="CertainTeed">CertainTeed</option>
                   <option value="GAF">GAF</option>
                   <option value="Owens Corning">Owens Corning</option>
@@ -249,7 +272,7 @@ export default function ControlPanel({ onCalculationComplete }) {
               </div>
               <div className="form-group">
                 <label>Shingle Tier</label>
-                <select className="form-control" name="shingle_tier" value={formData.shingle_tier} onChange={handleInputChange}>
+                <select className="form-control" name="shingle_tier" value={formData.shingle_tier} onChange={handleInputChange} style={{ backgroundColor: '#ffe6e6' }}>
                   <option value="Landmark">Landmark (Architectural)</option>
                   <option value="Landmark Pro">Landmark Pro (Premium)</option>
                   <option value="Belmont">Belmont (Luxury)</option>
@@ -259,7 +282,7 @@ export default function ControlPanel({ onCalculationComplete }) {
               <div className="row">
                 <div className="col form-group">
                   <label>Tear-off Layers</label>
-                  <input type="number" className="form-control" name="tear_off_layers" value={formData.tear_off_layers} onChange={handleInputChange} />
+                  <input type="number" className="form-control" name="tear_off_layers" value={formData.tear_off_layers} onChange={handleInputChange} style={{ backgroundColor: '#ffe6e6' }} />
                 </div>
                 <div className="col form-group">
                   <label>Markup (%)</label>

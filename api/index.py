@@ -8,6 +8,7 @@ from pydantic import ValidationError
 # Import your local modules
 from core.xml_parser import GAFXMLParser
 from core.calculator import ProposalRequest, PricingEngine
+from core.pdf_parser import QuickMeasureParser
 
 # ---------------------------------------------------------
 # 1. App Initialization & CORS Configuration
@@ -35,6 +36,20 @@ JOBNIMBUS_BASE_URL = "https://app.jobnimbus.com/api1"
 # ---------------------------------------------------------
 # 2. Endpoints
 # ---------------------------------------------------------
+
+# --- PDF Parsing Endpoint ---
+@app.post("/api/parse-pdf")
+async def parse_pdf(file: UploadFile = File(...)):
+    try:
+        content = await file.read()
+        extracted_data = QuickMeasureParser.parse_pdf(content)
+        return {"status": "success", "data": extracted_data}
+    except ValueError as e:
+        if str(e) == "NO_DATA_FOUND":
+            return {"status": "no_data"}
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse PDF: {str(e)}")
 
 @app.get("/api/health")
 async def health_check():
