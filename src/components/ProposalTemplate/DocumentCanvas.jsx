@@ -52,7 +52,8 @@ const DocumentCanvas = forwardRef(({ data }, ref) => {
       formData.append('metadata', JSON.stringify(data));
       formData.append('contact_id', data.contact_id || 'UNKNOWN');
 
-      const response = await fetch('/api/commit', {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const response = await fetch(`${apiBase}/api/commit`, {
         method: 'POST',
         body: formData
       });
@@ -60,7 +61,8 @@ const DocumentCanvas = forwardRef(({ data }, ref) => {
       if (response.ok) {
         setAlertConfig({ type: 'success', message: 'Success! Proposal generated and pushed to JobNimbus.' });
       } else {
-        setAlertConfig({ type: 'error', message: 'Error saving proposal to CRM. Please try again.' });
+        const errorText = await response.text();
+        setAlertConfig({ type: 'error', message: `Error saving proposal to CRM: ${response.status} - ${errorText}` });
       }
     } catch (error) {
       console.error("Commit failed:", error);

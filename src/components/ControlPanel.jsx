@@ -97,18 +97,19 @@ export default function ControlPanel({ onCalculationComplete }) {
         payload.options.step_flashing_override = Number(formData.step_flashing_override);
       }
 
-      const response = await fetch('/api/calculate', {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const response = await fetch(`${apiBase}/api/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Calculation failed: ${response.status} - ${errorText}`);
       }
       const result = await response.json();
-      
+
       if (result.status === "success") {
         setLiveTotal(result.data.financials.final_contract_price);
         onCalculationComplete({
@@ -145,7 +146,7 @@ export default function ControlPanel({ onCalculationComplete }) {
       </div>
 
       <div className="sidebar-content">
-        
+
         {/* ADMINISTRATIVE 1/4 */}
         <div className="form-section">
           <div className="form-section-header" onClick={() => toggleSection('ADMINISTRATIVE')}>
@@ -188,7 +189,7 @@ export default function ControlPanel({ onCalculationComplete }) {
                   <input type="number" className="form-control" name="waste_factor" value={formData.waste_factor} onChange={handleInputChange} />
                 </div>
               </div>
-              
+
               <div className="row">
                 <div className="col form-group">
                   <label>Eaves (LF)</label>
@@ -254,7 +255,7 @@ export default function ControlPanel({ onCalculationComplete }) {
                   <option value="Belmont">Belmont (Luxury)</option>
                 </select>
               </div>
-              
+
               <div className="row">
                 <div className="col form-group">
                   <label>Tear-off Layers</label>
@@ -277,7 +278,7 @@ export default function ControlPanel({ onCalculationComplete }) {
           </div>
           {expandedSection === 'ADDONS' && (
             <div className="form-section-body">
-              
+
               {/* Gutters Moved to Special Notes */}
 
               {/* Chimney Toggle */}
@@ -333,7 +334,7 @@ export default function ControlPanel({ onCalculationComplete }) {
           </div>
           {expandedSection === 'FINANCIALS' && (
             <div className="form-section-body">
-              
+
               <div className="form-group">
                 <label>Warranty Selection</label>
                 <select className="form-control" name="warranty_type" value={formData.warranty_type} onChange={handleInputChange}>
@@ -376,7 +377,7 @@ export default function ControlPanel({ onCalculationComplete }) {
               <p style={{ fontSize: '11px', color: '#666', marginBottom: '10px' }}>
                 <strong>Contingency Rates (Print Only):</strong> These rates do not affect the live total.
               </p>
-              
+
               <div className="row">
                 <div className="col form-group">
                   <label>Plywood ($/sf)</label>
@@ -424,8 +425,8 @@ export default function ControlPanel({ onCalculationComplete }) {
           )}
         </div>
 
-        <button 
-          className="btn-primary" 
+        <button
+          className="btn-primary"
           style={{ width: '100%', justifyContent: 'center', marginTop: '10px', padding: '12px' }}
           onClick={handleCalculate}
           disabled={isCalculating}
