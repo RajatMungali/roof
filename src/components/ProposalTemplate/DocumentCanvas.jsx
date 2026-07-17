@@ -140,9 +140,6 @@ const DocumentCanvas = forwardRef(({ data }, ref) => {
           </select>
         </div>
         <div className="toolbar-actions">
-          <button onClick={handleDownloadPDF} disabled={isCommitting}>
-            📄 Export PDF
-          </button>
         </div>
       </div>
 

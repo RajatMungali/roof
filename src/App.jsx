@@ -108,7 +108,7 @@ export default function App() {
           {currentPath === '/report' && (
             <>
               <button className="btn-secondary" onClick={handleDownloadClick} disabled={!proposalData || isSubmitting}>
-                💾 Download Draft PDF
+                💾 Download Final PDF
               </button>
               <button className="btn-primary" onClick={handleApproveClick} disabled={!proposalData || isSubmitting}>
                 {isSubmitting ? '⏳ Waiting for response from JobNimbus...' : '🚀 Approve & Send'}

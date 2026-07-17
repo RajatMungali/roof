@@ -80,7 +80,7 @@ export default function LandingPage({ onExtractSuccess, onManual, onOpenJob, job
   });
 
   return (
-    <div style={{ padding: '60px', fontFamily: 'sans-serif', color: '#111', minHeight: 'calc(100vh - 60px)', backgroundColor: '#f4f5f7' }}>
+    <div className="landing-container" style={{ padding: '60px', fontFamily: 'sans-serif', color: '#111', height: 'calc(100vh - 60px)', overflowY: 'auto', backgroundColor: '#f4f5f7', boxSizing: 'border-box' }}>
 
       {errorMsg && (
         <div style={{ padding: '10px', backgroundColor: '#ffe6e6', color: '#cc0000', borderRadius: '4px', marginBottom: '20px', maxWidth: '1400px', margin: '0 auto 20px auto' }}>
@@ -89,7 +89,7 @@ export default function LandingPage({ onExtractSuccess, onManual, onOpenJob, job
       )}
 
       {/* LAYOUT CONTAINER */}
-      <div style={{ display: 'flex', gap: '40px', maxWidth: '1400px', margin: '0 auto', alignItems: 'flex-start' }}>
+      <div className="landing-layout" style={{ display: 'flex', gap: '40px', maxWidth: '1400px', margin: '0 auto', alignItems: 'flex-start' }}>
         
         {/* LEFT COLUMN: Your Jobs */}
         <div style={{ flex: 1, backgroundColor: '#fff', borderRadius: '12px', padding: '40px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #eaeaea', minHeight: '50vh' }}>
@@ -186,7 +186,7 @@ export default function LandingPage({ onExtractSuccess, onManual, onOpenJob, job
           </p>
 
           {/* CARDS CONTAINER */}
-          <div style={{ display: 'flex', gap: '20px' }}>
+          <div className="landing-cards" style={{ display: 'flex', gap: '20px' }}>
             
             {/* DROPZONE CARD */}
         <div 
@@ -258,13 +258,6 @@ export default function LandingPage({ onExtractSuccess, onManual, onOpenJob, job
 
         </div>
       </div>
-
-      {/* FOOTER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px', color: '#888', fontSize: '14px', maxWidth: '1400px', margin: '40px auto 0 auto', padding: '0 40px' }}>
-        <span style={{ cursor: 'pointer' }}>⚙ Pricing & rates settings</span>
-        <span>{jobs.length} jobs</span>
-      </div>
-
     </div>
   );
 }

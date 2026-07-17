@@ -377,3 +377,58 @@ input:checked + .slider:before {
   height: 10.98in !important;
   overflow: hidden !important;
 }
+
+/* Mobile Responsive Landing Page */
+@media (max-width: 900px) {
+  .landing-container {
+    padding: 20px !important;
+  }
+  .landing-layout {
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+  .landing-layout > div {
+    width: 100% !important;
+    padding: 24px !important;
+    box-sizing: border-box !important;
+    min-height: auto !important;
+  }
+  .landing-cards {
+    flex-direction: column !important;
+    gap: 15px !important;
+  }
+}
+
+/* Landing Page Custom Scrollbar */
+.landing-container::-webkit-scrollbar {
+  width: 4px;
+}
+.landing-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.landing-container::-webkit-scrollbar-thumb {
+  background: #000;
+  border-radius: 5px;
+}
+.landing-container::-webkit-scrollbar-thumb:hover {
+  background: #222;
+}
+
+/* Report Page Custom Scrollbars (Canvas & Sidebar) */
+.canvas-container::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.canvas-container::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.canvas-container::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb {
+  background: #000;
+  border-radius: 5px;
+}
+.canvas-container::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #222;
+}
