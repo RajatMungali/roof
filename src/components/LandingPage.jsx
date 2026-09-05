@@ -37,7 +37,8 @@ export default function LandingPage({ onExtractSuccess, onManual, onOpenJob, job
       const formData = new FormData();
       formData.append('file', file);
       
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+      const apiBase = rawBase.replace(/\/+$/, '');
       const response = await fetch(`${apiBase}/api/parse-pdf`, {
         method: 'POST',
         body: formData,

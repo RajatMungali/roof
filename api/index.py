@@ -1,7 +1,7 @@
 import os
 import json
 import httpx
-from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Form
+from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Form, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
@@ -19,13 +19,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS so your Vite frontend can communicate with this backend safely
+router = APIRouter()
+
+# Configure CORS so your Vite frontend (both locally and on Vercel) can communicate with this backend safely
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to your specific Vite domain (e.g., "https://your-vite-app.vercel.app")
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Environment Variables (Stored securely in Vercel)
@@ -34,11 +37,12 @@ JOBNIMBUS_BASE_URL = "https://app.jobnimbus.com/api1"
 
 
 # ---------------------------------------------------------
-# 2. Endpoints
+# 2. Endpoints (Dual decorators so both / and /api work)
 # ---------------------------------------------------------
 
 # --- PDF Parsing Endpoint ---
-@app.post("/api/parse-pdf")
+@router.post("/parse-pdf")
+@router.post("/api/parse-pdf")
 async def parse_pdf(file: UploadFile = File(...)):
     try:
         content = await file.read()
@@ -51,12 +55,14 @@ async def parse_pdf(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse PDF: {str(e)}")
 
-@app.get("/api/health")
+@router.get("/health")
+@router.get("/api/health")
 async def health_check():
     """Simple ping endpoint to verify the Vercel function is awake."""
     return {"status": "active", "service": "JobNimbus Integration Engine"}
 
-@app.get("/api/parse_sheet")
+@router.get("/parse_sheet")
+@router.get("/api/parse_sheet")
 async def parse_sheet():
     import xml.etree.ElementTree as ET
     import os
@@ -97,7 +103,8 @@ async def parse_sheet():
     # Let's filter to just return everything to analyze
     return {"cells": cells}
 
-@app.get("/api/brute_force")
+@router.get("/brute_force")
+@router.get("/api/brute_force")
 async def brute_force():
     from core.calculator import ProposalRequest, PricingEngine
     
@@ -144,7 +151,8 @@ async def brute_force():
 
 
 
-@app.post("/api/webhook/gaf")
+@router.post("/webhook/gaf")
+@router.post("/api/webhook/gaf")
 async def handle_gaf_webhook(request: Request):
     """
     Catches the raw XML webhook from GAF[cite: 403, 715], parses it, 
@@ -158,9 +166,6 @@ async def handle_gaf_webhook(request: Request):
         # 2. Parse the measurements using your xml_parser module
         parsed_measurements = GAFXMLParser.parse_payload(xml_string)
 
-        # Note: GAF webhooks typically include a reference ID you pass during the initial order.
-        # For this example, we assume you extract a 'contact_id' from the XML or query params.
-        # contact_id = GAFXMLParser.extract_contact_id(xml_string)
         contact_id = request.query_params.get("contact_id") 
 
         if not contact_id:
@@ -172,13 +177,11 @@ async def handle_gaf_webhook(request: Request):
             "Content-Type": "application/json"
         }
         
-        # Mapping your parsed data to the JobNimbus custom fields [cite: 297]
         jn_payload = {
             "cf_gaf_roof_area_sq": parsed_measurements["roof_area_sq"],
             "cf_gaf_predominant_pitch": parsed_measurements["pitch"],
             "cf_gaf_eave_lf": parsed_measurements["eave_lf"],
             "cf_gaf_ridge_lf": parsed_measurements["ridge_lf"]
-            # ... map remaining fields
         }
 
         async with httpx.AsyncClient() as client:
@@ -195,7 +198,8 @@ async def handle_gaf_webhook(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/calculate")
+@router.post("/calculate")
+@router.post("/api/calculate")
 async def calculate_proposal(payload: ProposalRequest):
     """
     Receives JSON from the Vite frontend, runs the deterministic Excel math, 
@@ -212,7 +216,8 @@ async def calculate_proposal(payload: ProposalRequest):
         raise HTTPException(status_code=500, detail=f"Calculation Error: {str(e)}")
 
 
-@app.post("/api/commit")
+@router.post("/commit")
+@router.post("/api/commit")
 async def commit_proposal_to_crm(
     contact_id: str = Form(...),
     metadata: str = Form(...),
@@ -240,7 +245,6 @@ async def commit_proposal_to_crm(
             files_payload = {
                 "file": (file.filename, file_content, file.content_type)
             }
-            # JobNimbus requires related ID for file attachment
             data_payload = {"related": contact_id} 
             
             upload_res = await client.post(
@@ -257,7 +261,7 @@ async def commit_proposal_to_crm(
             update_payload = {
                 "cf_final_contract_price": job_data["financials"]["final_contract_price"],
                 "cf_deposit_due": job_data["financials"]["deposit_due"],
-                "status_name": "Proposal Sent" # This triggers the external automation hook [cite: 633]
+                "status_name": "Proposal Sent"
             }
 
             status_res = await client.put(
@@ -271,3 +275,6 @@ async def commit_proposal_to_crm(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Commit Error: {str(e)}")
+
+# Mount the router to the FastAPI app
+app.include_router(router)

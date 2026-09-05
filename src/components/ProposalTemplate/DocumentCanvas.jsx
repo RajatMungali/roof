@@ -52,7 +52,8 @@ const DocumentCanvas = forwardRef(({ data }, ref) => {
       formData.append('metadata', JSON.stringify(data));
       formData.append('contact_id', data.contact_id || 'UNKNOWN');
 
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+      const apiBase = rawBase.replace(/\/+$/, '');
       const response = await fetch(`${apiBase}/api/commit`, {
         method: 'POST',
         body: formData

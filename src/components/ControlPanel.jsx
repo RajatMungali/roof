@@ -120,7 +120,8 @@ export default function ControlPanel({ onCalculationComplete, pdfExtractedData, 
         payload.options.step_flashing_override = Number(formData.step_flashing_override);
       }
 
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+      const apiBase = rawBase.replace(/\/+$/, '');
       const response = await fetch(`${apiBase}/api/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
