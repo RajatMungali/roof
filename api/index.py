@@ -55,6 +55,11 @@ async def parse_pdf(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse PDF: {str(e)}")
 
+@router.get("/")
+@router.get("/api")
+async def root():
+    return {"status": "active", "service": "JobNimbus Integration Engine", "endpoints": ["/api/health", "/api/parse-pdf", "/api/calculate", "/api/commit"]}
+
 @router.get("/health")
 @router.get("/api/health")
 async def health_check():
