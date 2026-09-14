@@ -4,7 +4,6 @@ import ControlPanel from "./components/ControlPanel";
 import DocumentCanvas from "./components/ProposalTemplate/DocumentCanvas";
 import ContractDocument from "./components/ContractTemplate/ContractDocument";
 import LandingPage from "./components/LandingPage";
-import Settings from "./components/Settings";
 
 import "./assets/main.css";
 
@@ -152,7 +151,7 @@ export default function App() {
   // Job selected for contract generation
   const [contractJob, setContractJob] = useState(null);
 
-  const [jobs, setJobs] = useState(defaultJobs);
+  const [jobs, setJobs] = useState([]);
 
   const documentRef = useRef(null);
 
@@ -171,6 +170,32 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const loadJobs = async () => {
+      try {
+        const rawBase = import.meta.env.VITE_API_BASE_URL || "";
+        const apiBase = rawBase.replace(/\/+$/, "");
+
+        const response = await fetch(`${apiBase}/api/jobs`);
+
+        if (!response.ok) {
+          throw new Error(`Failed to load jobs: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+          setJobs(result.data);
+        }
+      } catch (error) {
+        console.error("Failed to load jobs:", error);
+        setJobs(defaultJobs);
+      }
+    };
+
+    loadJobs();
+  }, []);
+
   const navigate = (path) => {
     window.history.pushState({}, "", path);
     setCurrentPath(path);
@@ -181,36 +206,60 @@ export default function App() {
   };
 
   const handleApproveClick = async () => {
-    if (documentRef.current) {
-      setIsSubmitting(true);
+    if (!documentRef.current || !proposalData?.rawFormData) {
+      return;
+    }
 
-      if (proposalData && proposalData.rawFormData) {
-        setJobs((prev) => {
-          const newJob = {
-            id: Date.now(),
-            name: proposalData.customer_metadata?.name || "New Customer",
-            address:
-              proposalData.customer_metadata?.address || "Unknown Address",
-            price: proposalData.financials?.final_contract_price || 0,
-            status: "Ready for contract",
-            formData: proposalData.rawFormData,
-            proposalData: proposalData,
-          };
+    setIsSubmitting(true);
 
-          const existing = prev.find((j) => j.name === newJob.name);
+    try {
+      const rawBase = import.meta.env.VITE_API_BASE_URL || "";
+      const apiBase = rawBase.replace(/\/+$/, "");
 
-          if (existing) {
-            return prev.map((j) =>
-              j.id === existing.id ? { ...newJob, id: existing.id } : j,
-            );
-          }
+      const newJob = {
+        name: proposalData.customer_metadata?.name || "New Customer",
+        address: proposalData.customer_metadata?.address || "Unknown Address",
+        price: proposalData.financials?.final_contract_price || 0,
+        status: "Ready for contract",
+        formData: proposalData.rawFormData,
+        proposalData: proposalData,
+      };
 
-          return [newJob, ...prev];
-        });
+      const response = await fetch(`${apiBase}/api/jobs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newJob),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save job: ${response.status}`);
       }
 
-      console.log("JobNimbus bypassed — proposal saved locally for testing");
+      const result = await response.json();
 
+      if (result.status !== "success") {
+        throw new Error("Failed to save job");
+      }
+
+      const savedJob = result.data;
+
+      setJobs((prev) => {
+        const existing = prev.find((j) => j.name === savedJob.name);
+
+        if (existing) {
+          return prev.map((j) => (j.id === existing.id ? savedJob : j));
+        }
+
+        return [savedJob, ...prev];
+      });
+
+      console.log("Job saved to database");
+    } catch (error) {
+      console.error("Failed to save job:", error);
+      alert("Failed to save job.");
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -287,12 +336,6 @@ export default function App() {
         </div>
 
         <div className="nav-right">
-          <button
-            className="btn-secondary"
-            onClick={() => navigate("/settings")}
-          >
-            Settings
-          </button>
           <span className="status-badge">
             <span
               className="dot blinking-dot"
@@ -365,9 +408,7 @@ export default function App() {
 
       {/* MAIN CONTENT */}
 
-      {currentPath === "/settings" ? (
-        <Settings />
-      ) : currentPath === "/" ? (
+      {currentPath === "/" ? (
         <LandingPage
           onExtractSuccess={handleExtractSuccess}
           onManual={handleManual}
@@ -392,7 +433,6 @@ export default function App() {
         >
           {contractJob ? (
             <ContractDocument
-              proposalData={contractJob.proposalData}
               formData={contractJob.formData}
               proposalNumber={`JN-${contractJob.id}`}
             />

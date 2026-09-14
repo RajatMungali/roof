@@ -4,12 +4,13 @@ import httpx
 from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Form, APIRouter, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
+from sqlalchemy import text
 
 
 # Import your local modules
 from core.xml_parser import GAFXMLParser
 from core.calculator import ProposalRequest, PricingEngine
-from settings import load_pricing_settings, save_pricing_settings
+from settings import load_pricing_settings, save_pricing_settings, engine
 from core.pdf_parser import QuickMeasureParser
 
 # ---------------------------------------------------------
@@ -203,6 +204,95 @@ async def handle_gaf_webhook(request: Request):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ---------------------------------------------------------
+# Jobs Persistence
+# ---------------------------------------------------------
+
+@router.get("/jobs")
+@router.get("/api/jobs")
+async def get_jobs():
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text("""
+                    SELECT
+                        id,
+                        name,
+                        address,
+                        price,
+                        status,
+                        form_data,
+                        proposal_data,
+                        created_at
+                    FROM jobs
+                    ORDER BY created_at DESC
+                """)
+            ).mappings().all()
+
+        jobs = []
+        for row in rows:
+            jobs.append({
+                "id": row["id"],
+                "name": row["name"],
+                "address": row["address"],
+                "price": float(row["price"] or 0),
+                "status": row["status"],
+                "formData": row["form_data"],
+                "proposalData": row["proposal_data"],
+                "createdAt": row["created_at"].isoformat() if row["created_at"] else None,
+            })
+
+        return {
+            "status": "success",
+            "data": jobs
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to load jobs: {str(e)}"
+        )
+
+
+@router.post("/jobs")
+@router.post("/api/jobs")
+async def save_job(job: dict = Body(...)):
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(
+                text("""
+                    INSERT INTO jobs
+                        (name, address, price, status, form_data, proposal_data)
+                    VALUES
+                        (:name, :address, :price, :status,
+                         CAST(:form_data AS JSONB),
+                         CAST(:proposal_data AS JSONB))
+                    RETURNING id
+                """),
+                {
+                    "name": job.get("name", "New Customer"),
+                    "address": job.get("address", ""),
+                    "price": job.get("price", 0),
+                    "status": job.get("status", "Draft"),
+                    "form_data": json.dumps(job.get("formData", {})),
+                    "proposal_data": json.dumps(job.get("proposalData", {})),
+                }
+            )
+            job_id = result.scalar()
+
+        return {
+            "status": "success",
+            "data": {
+                **job,
+                "id": job_id
+            }
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save job: {str(e)}"
+        )
+
 
 # ---------------------------------------------------------
 # Pricing Settings
