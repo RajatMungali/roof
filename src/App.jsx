@@ -442,6 +442,7 @@ export default function App() {
         >
           {contractJob ? (
             <ContractDocument
+              proposalData={contractJob.proposalData}
               formData={contractJob.formData}
               proposalNumber={`JN-${contractJob.id}`}
             />
