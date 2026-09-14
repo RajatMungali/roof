@@ -4,6 +4,7 @@ import ControlPanel from "./components/ControlPanel";
 import DocumentCanvas from "./components/ProposalTemplate/DocumentCanvas";
 import ContractDocument from "./components/ContractTemplate/ContractDocument";
 import LandingPage from "./components/LandingPage";
+import Settings from "./components/Settings";
 
 import "./assets/main.css";
 
@@ -336,6 +337,12 @@ export default function App() {
         </div>
 
         <div className="nav-right">
+          <button
+            className="btn-secondary"
+            onClick={() => navigate("/settings")}
+          >
+            Settings
+          </button>
           <span className="status-badge">
             <span
               className="dot blinking-dot"
@@ -418,6 +425,8 @@ export default function App() {
           onGenerateContract={handleGenerateContract}
           jobs={jobs}
         />
+      ) : currentPath === "/settings" ? (
+        <Settings />
       ) : currentPath === "/contract" ? (
         /* =====================================================
            CONTRACT PAGE
