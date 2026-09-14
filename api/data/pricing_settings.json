@@ -1,0 +1,45 @@
+{
+  "material_prices": {
+    "ice_and_water_roll": 82.5,
+    "underlayment_roll": 112.65,
+    "starter_bundle": 61.63,
+    "shingle_sq": 47,
+    "ridge_cap_bundle": 74.15,
+    "ridge_vent_pc": 14.57,
+    "drip_edge_pc": 12.71,
+    "step_flashing_pack": 62.04,
+    "sealant_tube": 5.65,
+    "pipe_boot": 12.87,
+    "nails_box": 45,
+    "chimney_lead": 147.46,
+    "dumpster_30_yd": 950,
+    "dumpster_20_yd": 850,
+    "dumpster_15_yd": 625,
+    "skylight": 250,
+    "chimney_relead": 265,
+    "deck_replacement_sf": 5.85
+  },
+  "labor_rates": {
+    "new_construction": {
+      "normal": 75,
+      "steep": 85
+    },
+    "one_layer": {
+      "normal": 130,
+      "steep": 140
+    },
+    "two_layers": {
+      "normal": 150,
+      "steep": 235
+    },
+    "three_layers": {
+      "normal": 150,
+      "steep": 255
+    }
+  },
+  "defaults": {
+    "waste_percentage": 5,
+    "misc_percentage": 0.02,
+    "markup_percentage": 40
+  }
+}

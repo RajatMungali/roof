@@ -1,13 +1,15 @@
 import os
 import json
 import httpx
-from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Form, APIRouter
+from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Form, APIRouter, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
+
 
 # Import your local modules
 from core.xml_parser import GAFXMLParser
 from core.calculator import ProposalRequest, PricingEngine
+from settings import load_pricing_settings, save_pricing_settings
 from core.pdf_parser import QuickMeasureParser
 
 # ---------------------------------------------------------
@@ -202,7 +204,61 @@ async def handle_gaf_webhook(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ---------------------------------------------------------
+# Pricing Settings
+# ---------------------------------------------------------
 
+@router.get("/settings")
+@router.get("/api/settings")
+async def get_settings():
+    """Return the current pricing defaults."""
+    try:
+        return {
+            "status": "success",
+            "data": load_pricing_settings()
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to load pricing settings: {str(e)}"
+        )
+
+
+@router.put("/settings")
+@router.put("/api/settings")
+async def update_settings(new_settings: dict = Body(...)):
+    """Update and persist pricing defaults."""
+    try:
+        # Basic validation
+        required_sections = [
+            "material_prices",
+            "labor_rates",
+            "defaults"
+        ]
+
+        for section in required_sections:
+            if section not in new_settings:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Missing settings section: {section}"
+                )
+
+        save_pricing_settings(new_settings)
+
+        return {
+            "status": "success",
+            "message": "Pricing settings updated successfully",
+            "data": load_pricing_settings()
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save pricing settings: {str(e)}"
+        )
 @router.post("/calculate")
 @router.post("/api/calculate")
 async def calculate_proposal(payload: ProposalRequest):

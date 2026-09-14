@@ -1,5 +1,6 @@
 import math
 from pydantic import BaseModel, Field
+from settings import load_pricing_settings
 
 # ---------------------------------------------------------
 # 1. Input Schemas 
@@ -17,20 +18,47 @@ class RoofMeasurements(BaseModel):
 
 class JobOptions(BaseModel):
     tear_off_layers: int = Field(default=1, description="0 for new construction, 1-3 for tear-offs")
+
+    # Material selections
+    manufacturer: str = Field(default="CertainTeed")
     shingle_brand: str = Field(default="CertainTeed")
     shingle_tier: str = Field(default="Landmark Pro")
+
+    # Optional add-ons
     relead_chimney: bool = Field(default=False)
     number_of_chimneys: int = Field(default=0)
     number_of_pipe_boots: int = Field(default=0)
+    ridge_vent: bool = Field(default=True)
+    new_skylights: int = Field(default=0)
+    remove_satellite: bool = Field(default=False)
+
+    # Financial options
     apply_financing: bool = Field(default=False)
-    labor_rate_override: float = Field(default=None, description="Optional override for the per-square labor rate")
-    misc_percentage: float = Field(default=0.02, description="Percentage added for misc materials (default 2%)")
-    step_flashing_override: int = Field(default=None, description="Optional override for step flashing packs")
+    markup_percentage: float = Field(default=40.0)
+    labor_rate_override: float = Field(
+        default=None,
+        description="Optional override for the per-square labor rate"
+    )
+    misc_percentage: float = Field(
+        default=0.02,
+        description="Percentage added for misc materials (default 2%)"
+    )
+
+    # Overrides
+    step_flashing_override: int = Field(
+        default=None,
+        description="Optional override for step flashing packs"
+    )
     warranty_type: str = Field(default="Standard")
     warranty_cost: float = Field(default=0.0)
     deck_replacement_sf: float = Field(default=0.0)
     custom_labor_override: float = Field(default=0.0)
-    waste_factor: float = Field(default=0.05, description="Dynamic waste percentage (e.g. 0.20 for 20%)")
+
+    # Waste
+    waste_factor: float = Field(
+        default=0.05,
+        description="Dynamic waste percentage (e.g. 0.20 for 20%)"
+    )
 
 class ProposalRequest(BaseModel):
     measurements: RoofMeasurements
@@ -40,43 +68,41 @@ class ProposalRequest(BaseModel):
 # 2. The Core Pricing Calculator
 # ---------------------------------------------------------
 class PricingEngine:
-    PRICES = {
-        "ice_and_water_roll": 82.50,     # CertainTeed WinterGuard
-        "underlayment_roll": 112.65,     # CertainTeed RoofRunner
-        "starter_bundle": 61.63,         # SwiftStart Starter Strip
-        "shingle_sq": 147.00,            # Restored to 147.00
-        "ridge_cap_bundle": 74.15,       # ShadowRidge
-        "ridge_vent_pc": 14.57,          # 12" filtered Ridge Vent
-        "drip_edge_pc": 12.71,           # 8" white drip edge
-        "step_flashing_pack": 62.04,     # Alum Step Flashing
-        "sealant_tube": 5.65,            # Geocel 3900
-        "pipe_boot": 12.87,              # 3"-4" universal pipe boot
-        "nails_box": 45.00,              # Restored to 45.00
-        "chimney_lead": 147.46,          # Chimney lead
-        "dumpster_30_yd": 950.00,
-        "dumpster_20_yd": 850.00,
-        "dumpster_15_yd": 625.00
-    }
 
     @staticmethod
-    def calculate_labor_rate(layers: int, pitch: int) -> float:
-        """Determines the labor cost per square based on spreadsheet matrix."""
+    def get_settings():
+        return load_pricing_settings()
+
+    @classmethod
+    def get_prices(cls):
+        return cls.get_settings()["material_prices"]
+
+    @classmethod
+    def calculate_labor_rate(cls, layers: int, pitch: int) -> float:
+        """Determines labor cost from saved pricing settings."""
+
+        labor_rates = cls.get_settings()["labor_rates"]
+
         is_steep = pitch >= 8
-        
+        roof_type = "steep" if is_steep else "normal"
+
         if layers == 0:
-            return 85.00 if is_steep else 75.00
+            return labor_rates["new_construction"][roof_type]
         elif layers == 1:
-            return 140.00 if is_steep else 130.00
+            return labor_rates["one_layer"][roof_type]
         elif layers == 2:
-            return 235.00 if is_steep else 150.00
+            return labor_rates["two_layers"][roof_type]
         elif layers >= 3:
-            return 255.00 if is_steep else 150.00
-        return 130.00
+            return labor_rates["three_layers"][roof_type]
+
+        return labor_rates["one_layer"][roof_type]
+    
 
     @classmethod
     def run_estimate(cls, payload: ProposalRequest) -> dict:
         m = payload.measurements
         opt = payload.options
+        prices = cls.get_prices()
 
         # ---------------------------------------------------------
         # A. Material Quantities & Formulas (Spreadsheet Match)
@@ -103,8 +129,12 @@ class PricingEngine:
         # 6. Ridge Caps: Hip + Ridge + 10% waste -> 30 lf bundles
         ridge_cap_bundles = math.ceil(((m.hip_lf + m.ridge_lf) * 1.10) / 30)
         
-        # 7. Ridge Vents: Ridge length + 10% waste -> 4' pieces
-        ridge_vent_pcs = math.ceil((m.ridge_lf * 1.10) / 4)
+        # 7. Ridge Vents: only calculate if the option is enabled
+        ridge_vent_pcs = 0
+
+        if opt.ridge_vent:
+            ridge_vent_pcs = math.ceil((m.ridge_lf * 1.10) / 4)
+        
         
         # 8. Step Flashing: Use override if present, else If 0 layers, (Sidewall x 3) + (Chimneys x 12) + 10% waste -> 100 pc packs
         if opt.step_flashing_override is not None:
@@ -120,19 +150,22 @@ class PricingEngine:
         # ---------------------------------------------------------
         # B. Aggregate Material Costs & Tax
         # ---------------------------------------------------------
+        # Skylights
+        skylight_cost = opt.new_skylights * prices["skylight"]
         materials_cost = (
-            (shingle_squares * cls.PRICES["shingle_sq"]) +
-            (drip_edge_pcs * cls.PRICES["drip_edge_pc"]) +
-            (iw_rolls * cls.PRICES["ice_and_water_roll"]) +
-            (underlayment_rolls * cls.PRICES["underlayment_roll"]) +
-            (starter_bundles * cls.PRICES["starter_bundle"]) +
-            (ridge_cap_bundles * cls.PRICES["ridge_cap_bundle"]) +
-            (ridge_vent_pcs * cls.PRICES["ridge_vent_pc"]) +
-            (step_flashing_packs * cls.PRICES["step_flashing_pack"]) +
-            (nail_boxes * cls.PRICES["nails_box"]) +
-            (opt.number_of_pipe_boots * cls.PRICES["pipe_boot"]) +
-            (opt.number_of_chimneys * cls.PRICES["chimney_lead"]) +
-            (6 * cls.PRICES["sealant_tube"]) # Hardcoded 6 tubes based on Image 3
+            (shingle_squares * prices["shingle_sq"]) +
+            (drip_edge_pcs * prices["drip_edge_pc"]) +
+            (iw_rolls * prices["ice_and_water_roll"]) +
+            (underlayment_rolls * prices["underlayment_roll"]) +
+            (starter_bundles * prices["starter_bundle"]) +
+            (ridge_cap_bundles * prices["ridge_cap_bundle"]) +
+            (ridge_vent_pcs * prices["ridge_vent_pc"]) +
+            (step_flashing_packs * prices["step_flashing_pack"]) +
+            (nail_boxes * prices["nails_box"]) +
+            (opt.number_of_pipe_boots * prices["pipe_boot"]) +
+            (opt.number_of_chimneys * prices["chimney_lead"]) +
+            (6 * prices["sealant_tube"]) +
+            skylight_cost
         )
 
         misc_cost = materials_cost * opt.misc_percentage
@@ -154,29 +187,41 @@ class PricingEngine:
         dumpster_cost = 0
         if opt.tear_off_layers > 0:
             if equivalent_sq <= 25:
-                dumpster_cost = cls.PRICES["dumpster_15_yd"]
+                dumpster_cost = prices["dumpster_15_yd"]
             elif equivalent_sq <= 30:
-                dumpster_cost = cls.PRICES["dumpster_20_yd"]
+                dumpster_cost = prices["dumpster_20_yd"]
             elif equivalent_sq <= 50:
-                dumpster_cost = cls.PRICES["dumpster_30_yd"]
+                dumpster_cost = prices["dumpster_30_yd"]
             else:
-                dumpster_cost = math.ceil(equivalent_sq / 50) * cls.PRICES["dumpster_30_yd"]
+                dumpster_cost = math.ceil(equivalent_sq / 50) * prices["dumpster_30_yd"]
 
         # Flat Add-ons
+        # Flat Add-ons
+        # Flat Add-ons
         flat_add_ons_cost = 0
+
+        markup_multiplier = 1.0 + (opt.markup_percentage / 100.0)
+
         if opt.relead_chimney:
-            flat_add_ons_cost += 265.00
+            flat_add_ons_cost += prices["chimney_relead"]
+
         if opt.deck_replacement_sf > 0:
-            flat_add_ons_cost += (opt.deck_replacement_sf * 5.85) / 1.40 # Divide by markup since it gets marked up later
+            flat_add_ons_cost += (
+                opt.deck_replacement_sf * prices["deck_replacement_sf"]
+            ) / markup_multiplier
+
         if opt.warranty_cost > 0:
-            flat_add_ons_cost += opt.warranty_cost / 1.40 # Divide by markup since it gets marked up later
+            flat_add_ons_cost += (
+                opt.warranty_cost
+            ) / markup_multiplier
 
         total_subtotal_cost = total_material_w_tax + total_labor_cost + flat_add_ons_cost + dumpster_cost
 
         # ---------------------------------------------------------
         # D. Margins, Sell Point, and Payments
         # ---------------------------------------------------------
-        ideal_sell_point = total_subtotal_cost * 1.40
+        markup_multiplier = 1.0 + (opt.markup_percentage / 100.0)
+        ideal_sell_point = total_subtotal_cost * markup_multiplier
             
         # Finance Fee if applicable
         financing_fee = ideal_sell_point * 0.0325 if opt.apply_financing else 0
@@ -187,24 +232,42 @@ class PricingEngine:
         completion_due = final_contract_price * 0.70
 
         return {
-            "quantities": {
-                "shingle_squares": shingle_squares,
-                "drip_edge_pcs": drip_edge_pcs,
-                "ice_and_water_rolls": iw_rolls,
-                "underlayment_rolls": underlayment_rolls,
-                "starter_bundles": starter_bundles,
-                "ridge_cap_bundles": ridge_cap_bundles,
-                "ridge_vent_pcs": ridge_vent_pcs,
-                "step_flashing_packs": step_flashing_packs,
-                "nail_boxes": nail_boxes
-            },
-            "financials": {
-                "total_cost": round(total_subtotal_cost, 2),
-                "materials_tax": round(material_tax, 2),
-                "margin_sell_point": round(ideal_sell_point, 2),
-                "financing_fee": round(financing_fee, 2),
-                "final_contract_price": round(final_contract_price, 2),
-                "deposit_due": round(deposit_due, 2),
-                "completion_due": round(completion_due, 2)
-            }
+        "quantities": {
+            "shingle_squares": shingle_squares,
+            "drip_edge_pcs": drip_edge_pcs,
+            "ice_and_water_rolls": iw_rolls,
+            "underlayment_rolls": underlayment_rolls,
+            "starter_bundles": starter_bundles,
+            "ridge_cap_bundles": ridge_cap_bundles,
+            "ridge_vent_pcs": ridge_vent_pcs,
+            "step_flashing_packs": step_flashing_packs,
+            "nail_boxes": nail_boxes,
+            "pipe_boots": opt.number_of_pipe_boots,
+            "chimneys": opt.number_of_chimneys,
+            "skylights": opt.new_skylights,
+        },
+
+        "financials": {
+            "total_cost": round(total_subtotal_cost, 2),
+            "materials_tax": round(material_tax, 2),
+            "margin_sell_point": round(ideal_sell_point, 2),
+            "financing_fee": round(financing_fee, 2),
+            "final_contract_price": round(final_contract_price, 2),
+            "deposit_due": round(deposit_due, 2),
+            "completion_due": round(completion_due, 2)
+        },
+
+        "options": {
+            "manufacturer": opt.manufacturer,
+            "shingle_tier": opt.shingle_tier,
+            "tear_off_layers": opt.tear_off_layers,
+            "number_of_pipe_boots": opt.number_of_pipe_boots,
+            "relead_chimney": opt.relead_chimney,
+            "number_of_chimneys": opt.number_of_chimneys,
+            "ridge_vent": opt.ridge_vent,
+            "new_skylights": opt.new_skylights,
+            "markup_percentage": opt.markup_percentage,
+            "apply_financing": opt.apply_financing,
+            "warranty_type": opt.warranty_type,
         }
+    }
