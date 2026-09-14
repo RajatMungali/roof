@@ -1,26 +1,40 @@
+import os
 import json
-from pathlib import Path
+from sqlalchemy import create_engine, text
 
-SETTINGS_FILE = Path(__file__).parent / "data" / "pricing_settings.json"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
+engine = create_engine(DATABASE_URL)
 
 def load_pricing_settings():
-    """Load pricing defaults from the persistent JSON file."""
-    if not SETTINGS_FILE.exists():
-        raise FileNotFoundError(
-            f"Pricing settings file not found: {SETTINGS_FILE}"
-        )
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT settings FROM pricing_settings WHERE id = 1")
+        ).fetchone()
 
-    with open(SETTINGS_FILE, "r", encoding="utf-8") as file:
-        return json.load(file)
+        if result:
+            return json.loads(result[0])
+
+        return {
+            "material_prices": {},
+            "labor_rates": {},
+            "defaults": {}
+        }
 
 
 def save_pricing_settings(settings):
-    """Save updated pricing defaults."""
-    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    settings_json = json.dumps(settings)
 
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as file:
-        json.dump(settings, file, indent=2)
+    with engine.begin() as conn:
+        conn.execute(
+            text("""
+                INSERT INTO pricing_settings (id, settings)
+                VALUES (1, :settings)
+                ON CONFLICT (id)
+                DO UPDATE SET settings = :settings
+            """),
+            {"settings": settings_json}
+        )
 
 
 def get_material_prices():
